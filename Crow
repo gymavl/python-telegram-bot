@@ -1,0 +1,34 @@
+from telegram.ext import Updater, CommandHandler
+import requests
+from bs4 import BeautifulSoup
+import time
+
+TOKEN = 'ВАШ_ТОКЕН'
+URL = "https://wemixplay.com/en/tokens/CROW"
+
+def check_price(context):
+    page = requests.get(URL)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    
+    # Используйте соответствующий селектор для извлечения цены
+    price = float(soup.find('ваш_селектор').text.strip('$'))
+    average_price = 0 # Рассчитайте среднюю цену за последние 24 часа
+
+    if price > 0.75:
+        context.job.context.message.reply_text(f"CROW Token Price Alert: ${price}")
+
+def start(update, context):
+    update.message.reply_text('Monitoring CROW Token Price...')
+    context.job_queue.run_repeating(check_price, interval=60, first=0, context=update)
+
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start, pass_job_queue=True))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
